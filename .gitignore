@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.ehpk
+*.log
+.hecaton/*
+!.hecaton/.command/
+.hecaton/.command/*
+!.hecaton/.command/Build and Run.cmake
+!.hecaton/.command/Build and G2.cmake

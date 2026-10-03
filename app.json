@@ -1,0 +1,15 @@
+{
+  "package_id": "com.example.g2counter",
+  "name": "G2 Sensor Explorer",
+  "version": "0.1.0",
+  "edition": "202601",
+  "min_sdk_version": "0.0.16",
+  "entrypoint": "index.html",
+  "permissions": [
+    { "name": "g2-microphone", "desc": "Display live PCM levels and metadata from the G2 microphone." },
+    { "name": "phone-microphone", "desc": "Display live PCM levels from the phone microphone when selected." },
+    { "name": "location", "desc": "Display phone location values when the user starts location capture." },
+    { "name": "camera", "desc": "Display a user-triggered phone camera capture and its metadata." }
+  ],
+  "supported_languages": ["en", "ko"]
+}

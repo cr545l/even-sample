@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#101712" />
+  <title>G2 Sensor Explorer</title>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">EVEN G2 / SDK 0.0.16</p>
+      <h1>Sensor Explorer</h1>
+      <p>안경과 휴대폰에서 도착하는 센서 값을 확인하세요.</p>
+      <p id="status" role="status">연결 대기 중</p>
+      <dl class="connection-diagnostics">
+        <dt>네이티브 호스트</dt><dd id="native-status">확인 중</dd>
+        <dt>G2 기기 연결</dt><dd id="device-link-status">미확인</dd>
+        <dt>안경 디스플레이</dt><dd id="display-status">화면 생성 전</dd>
+      </dl>
+      <button id="connect-retry" type="button">호스트 연결 다시 확인</button>
+      <details><summary>IMU 요청·원본 응답 진단</summary><pre id="imu-reply">아직 요청하지 않음</pre></details>
+      <p id="demo-banner" class="banner" hidden>가상 데이터 데모입니다. 표시되는 센서 값은 실제 측정값이 아닙니다.</p>
+      <p id="error" role="alert"></p>
+      <div class="actions"><button id="stop-all" data-control disabled>전체 수집 중지</button><a href="?demo=1">브라우저 데모</a><a href="?">실제 연결 모드</a></div>
+    </header>
+    <div class="grid">
+      <section>
+        <div class="heading"><h2>01 / 기기 상태</h2><span class="tag">G2 · R1</span></div>
+        <p class="hint">SDK가 반환하거나 상태 이벤트로 전달한 기기만 표시합니다.</p>
+        <button id="refresh-device" data-control disabled>기기 정보 새로고침</button>
+        <div id="devices">기기 정보 미수신</div>
+      </section>
+      <section>
+        <div class="heading"><h2>02 / IMU</h2><span class="tag">안경</span></div>
+        <p id="imu-status" class="state">중지됨</p>
+        <div class="imu-layout">
+          <div class="axes"><div>X<strong id="imu-x">미수신</strong></div><div>Y<strong id="imu-y">미수신</strong></div><div>Z<strong id="imu-z">미수신</strong></div></div>
+          <figure class="imu-figure">
+            <canvas id="imu-3d" tabindex="0" role="img" aria-label="추정한 안경 기울기. 드래그 또는 방향키로 관찰 시점을 회전하고 Home으로 복원합니다." aria-describedby="imu-vector-caption">중력 기반 안경 기울기 시각화</canvas>
+            <figcaption id="imu-vector-caption">유효한 축 3개가 수신되면 추정 기울기를 표시합니다.</figcaption>
+            <div class="imu-view-tools"><span>드래그 / 방향키: 시점 회전</span><button id="imu-view-reset" type="button">시점 초기화</button></div>
+          </figure>
+        </div>
+        <p class="hint">측정한 자세를 기준으로 축을 약 16.7° 보정한 안경 모형입니다. R은 착용자의 오른쪽, 화살표는 코 방향입니다. 중력 기반 추정으로 수평 회전은 알 수 없으며 움직이는 중에는 오차가 생길 수 있습니다.</p>
+        <div class="actions"><label>보고 코드 <select id="imu-pace"><option selected>100</option><option>200</option><option>300</option><option>400</option><option>500</option><option>600</option><option>700</option><option>800</option><option>900</option><option>1000</option></select></label><button id="imu-toggle" data-control disabled>IMU 시작</button></div>
+        <p class="hint">연결 후 IMU를 자동 시작합니다. 단위·축 의미는 SDK 미명시. 보고 코드는 Hz가 아닙니다. 가속도/자이로 별도 축은 공개 API에 없습니다.</p>
+      </section>
+      <section>
+        <div class="heading"><h2>03 / 마이크</h2><span class="tag">안경 / 휴대폰</span></div>
+        <p id="mic-status" class="state">중지됨</p>
+        <div class="actions"><label>입력 <select id="mic-source"><option value="glasses">G2 마이크</option><option value="phone">휴대폰 마이크</option></select></label><button id="mic-toggle" data-control disabled>마이크 시작</button></div>
+        <label class="meter-label">RMS (0–1)<meter id="audio-meter" min="0" max="1" value="0"></meter></label>
+        <dl>
+          <dt>수신 출처</dt><dd id="audio-source">미수신</dd><dt>RMS</dt><dd id="audio-rms">미수신</dd><dt>Peak</dt><dd id="audio-peak">미수신</dd><dt>레벨 (dBFS)</dt><dd id="audio-db">미수신</dd>
+          <dt>방향 태그 (원값)</dt><dd id="audio-direction">미수신</dd><dt>화자 분류 (앱 추정)</dt><dd id="audio-role">미수신</dd>
+          <dt>프레임 바이트</dt><dd id="audio-bytes">미수신</dd><dt>샘플 수</dt><dd id="audio-samples">미수신</dd><dt>프레임 길이 (ms)</dt><dd id="audio-duration">미수신</dd>
+        </dl>
+        <details><summary>PCM 첫 16개 샘플</summary><pre id="pcm-preview">미수신</pre></details>
+        <p class="hint">16 kHz · signed PCM16 LE · mono. G2의 4개 마이크는 하나의 스트림으로 제공됩니다. 음성은 저장·전송하지 않으며 최근 프레임의 통계만 유지합니다. dBFS는 실제 소음계의 dB SPL이 아닙니다.</p>
+      </section>
+      <section>
+        <div class="heading"><h2>04 / 위치</h2><span class="tag">휴대폰</span></div>
+        <p id="gps-status" class="state">중지됨</p>
+        <div class="actions"><button id="gps-once" data-control disabled>위치 1회 조회</button><button id="gps-toggle" data-control disabled>위치 추적 시작</button></div>
+        <dl>
+          <dt>위도 (°)</dt><dd id="gps-latitude">미수신</dd><dt>경도 (°)</dt><dd id="gps-longitude">미수신</dd><dt>수평 정확도 (m)</dt><dd id="gps-accuracy">미수신</dd>
+          <dt>고도 (m)</dt><dd id="gps-altitude">미수신</dd><dt>속도 (m/s)</dt><dd id="gps-speed">미수신</dd><dt>방위 (진북 기준 °)</dt><dd id="gps-heading">미수신</dd><dt>타임스탬프 (Unix ms)</dt><dd id="gps-timestamp">미수신</dd>
+        </dl>
+        <p class="hint">휴대폰 위치 권한이 필요합니다. 안경 자체 GPS 값이 아닙니다. 추적 요청은 1초 간격이며 실제 수신 주기는 호스트에 따라 다릅니다.</p>
+      </section>
+      <section>
+        <div class="heading"><h2>05 / 터치 · 시스템 이벤트</h2><span class="tag">안경 · R1</span></div>
+        <dl><dt>입력 횟수</dt><dd id="input-count">0</dd><dt>최근 입력</dt><dd id="input-type">미수신</dd><dt>입력 출처</dt><dd id="input-source">미제공</dd><dt>수신 시점</dt><dd id="input-time">미수신</dd></dl>
+        <button id="demo-tap" hidden>가상 탭</button>
+        <p class="hint">탭·더블 탭·스크롤·길게 누르기·놓기를 표시합니다. 호스트가 출처를 생략하면 추측하지 않습니다. 시스템 이벤트는 아래 원본에서 확인하세요.</p>
+      </section>
+      <section>
+        <div class="heading"><h2>06 / 카메라</h2><span class="tag">휴대폰 · 1회 촬영</span></div>
+        <p id="camera-status" class="state">촬영 전</p>
+        <div class="actions"><button id="capture" data-control disabled>휴대폰 카메라 열기</button><button id="clear-camera">사진 지우기</button></div>
+        <img id="camera-image" alt="휴대폰에서 촬영한 사진 미리보기" hidden />
+        <pre id="camera-meta"></pre>
+        <p class="hint">G2에는 카메라가 없습니다. 휴대폰에서 촬영한 사진과 경로·파일명·MIME·크기만 표시하며 서버에 전송하지 않습니다. 연속 영상 센서 API는 제공되지 않습니다.</p>
+      </section>
+      <section>
+        <h2>G2 안경으로 보내는 화면</h2><p id="glass-page">2 / 6</p><pre id="glass-preview" class="glass"></pre>
+        <canvas id="glasses-imu-frame" width="288" height="144" role="img" aria-label="G2 안경 오른쪽 이미지 컨테이너로 전송하는 IMU 3D 프레임"></canvas>
+        <div class="actions"><button id="previous-page">이전 화면</button><button id="next-page">다음 화면</button></div>
+        <p class="hint">안경 왼쪽: 숫자 · 오른쪽: 3D 이미지. 탭/아래 스크롤: 다음 · 위 스크롤: 이전 · 길게 누르기: IMU 시작/중지 · 더블 탭: 시스템 종료 확인. 3D 이미지는 288×144 Gray8로 최대 초당 1회 전송합니다. 승인 응답과 실제 표시 여부는 다를 수 있습니다.</p>
+      </section>
+      <section>
+        <h2>수신 기록</h2><pre id="event-log" class="event-log">수신 대기</pre>
+        <details><summary>최근 SDK 이벤트 / 응답</summary><pre id="raw">{}</pre></details>
+        <p class="hint">미수신은 0이나 미지원과 다릅니다. 시뮬레이터 값은 하드웨어 측정값이 아닙니다. SDK가 노출하지 않는 조도·온도·심박·개별 자이로/가속도 값은 표시할 수 없습니다.</p>
+      </section>
+    </div>
+    <footer>권한은 마이크·위치·촬영 시작 시 요청됩니다. 수집 중지 후에는 마지막 값을 보존합니다. <a href="https://hub.evenrealities.com/docs/build/device-apis" target="_blank" rel="noreferrer">SDK Device APIs</a></footer>
+  </main>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
